@@ -1,0 +1,20 @@
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+sqlalchemy==2.0.27
+psycopg[binary]==3.1.18
+alembic==1.13.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+email-validator==2.1.0.post1
+
+# Kafka (CRITICAL: Using ng fork for Python 3.12 compatibility)
+kafka-python-ng==2.2.2
+
+# Utilities
+python-dotenv==1.0.1
+httpx==0.26.0
+
+# Dev Tools
+pytest
+black
+isort

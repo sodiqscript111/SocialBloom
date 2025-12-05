@@ -19,29 +19,10 @@ async def create_booking(
     booking: BookingCreate, 
     service: BookingService = Depends(get_booking_service)
 ):
-    print("!!! HIT /bookings ENDPOINT !!!", flush=True)
     return service.create_booking(booking)
 
 @router.get("/bookings", response_model=List[BookingResponse])
 async def get_bookings(
-    business_id: int = None,
-    creator_id: int = None,
-    status: str = None,
     service: BookingService = Depends(get_booking_service)
 ):
-    return service.get_bookings(business_id, creator_id, status)
-
-@router.get("/bookings/{booking_id}", response_model=BookingResponse)
-async def get_booking(
-    booking_id: int,
-    service: BookingService = Depends(get_booking_service)
-):
-    return service.get_booking_by_id(booking_id)
-
-@router.patch("/bookings/{booking_id}/status", response_model=BookingResponse)
-async def update_booking_status(
-    booking_id: int,
-    status: str,
-    service: BookingService = Depends(get_booking_service)
-):
-    return service.update_booking_status(booking_id, status)
+    return service.get_bookings()
