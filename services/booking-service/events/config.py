@@ -5,7 +5,7 @@ KAFKA_BOOTSTRAP_SERVERS = ["localhost:9092"]
 def get_producer():
     return KafkaProducer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
-        value_serializer=lambda v: v.encode("utf-8"),
+        value_serializer=lambda v: str(v).encode("utf-8"),
         retries=5,
     )
 
