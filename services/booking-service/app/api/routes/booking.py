@@ -4,25 +4,25 @@ from typing import List
 from db.database import get_db, engine
 from app.models.booking import Booking, Base
 from app.schemas.booking import BookingCreate, BookingResponse
+from services.booking_service import BookingService
 
 # Create tables (Simplification for now, usually done via Alembic)
 Base.metadata.create_all(bind=engine)
 
 router = APIRouter()
 
+def get_booking_service(db: Session = Depends(get_db)) -> BookingService:
+    return BookingService(db)
+
 @router.post("/bookings", response_model=BookingResponse, status_code=status.HTTP_201_CREATED)
-async def create_booking(booking: BookingCreate, db: Session = Depends(get_db)):
-    new_booking = Booking(
-        business_id=booking.business_id,
-        creator_id=booking.creator_id,
-        price=booking.price,
-        requirements=booking.requirements
-    )
-    db.add(new_booking)
-    db.commit()
-    db.refresh(new_booking)
-    return new_booking
+async def create_booking(
+    booking: BookingCreate, 
+    service: BookingService = Depends(get_booking_service)
+):
+    return service.create_booking(booking)
 
 @router.get("/bookings", response_model=List[BookingResponse])
-async def get_bookings(db: Session = Depends(get_db)):
-    return db.query(Booking).all()
+async def get_bookings(
+    service: BookingService = Depends(get_booking_service)
+):
+    return service.get_bookings()
