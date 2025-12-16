@@ -1,7 +1,3 @@
-"""
-TikTok OAuth Provider
-Implements OAuth 2.0 flow for TikTok API.
-"""
 from urllib.parse import urlencode
 from typing import Optional
 
@@ -10,11 +6,6 @@ from oauth.config import TikTokConfig
 
 
 class TikTokOAuthProvider(BaseOAuthProvider):
-    """
-    TikTok OAuth 2.0 implementation.
-    
-    Docs: https://developers.tiktok.com/doc/oauth-user-access-token-management
-    """
     
     def __init__(self, config: Optional[TikTokConfig] = None):
         from oauth.config import get_tiktok_config
@@ -25,15 +16,6 @@ class TikTokOAuthProvider(BaseOAuthProvider):
         return "tiktok"
     
     def get_authorization_url(self, state: str) -> str:
-        """
-        Generate TikTok authorization URL.
-        
-        Args:
-            state: CSRF protection state token
-            
-        Returns:
-            TikTok OAuth authorization URL
-        """
         params = {
             "client_key": self.config.client_id,
             "response_type": "code",
@@ -44,15 +26,6 @@ class TikTokOAuthProvider(BaseOAuthProvider):
         return f"{self.config.auth_url}?{urlencode(params)}"
     
     async def exchange_code_for_token(self, code: str) -> OAuthTokenResponse:
-        """
-        Exchange authorization code for TikTok access token.
-        
-        Args:
-            code: Authorization code from callback
-            
-        Returns:
-            OAuthTokenResponse with tokens
-        """
         payload = {
             "client_key": self.config.client_id,
             "client_secret": self.config.client_secret,
@@ -92,15 +65,6 @@ class TikTokOAuthProvider(BaseOAuthProvider):
         )
     
     async def get_user_profile(self, access_token: str) -> SocialProfile:
-        """
-        Fetch TikTok user profile.
-        
-        Args:
-            access_token: Valid TikTok access token
-            
-        Returns:
-            SocialProfile with user data
-        """
         params = {
             "fields": "open_id,union_id,avatar_url,display_name,username,follower_count,following_count,bio_description"
         }
@@ -141,15 +105,6 @@ class TikTokOAuthProvider(BaseOAuthProvider):
         )
     
     async def refresh_access_token(self, refresh_token: str) -> OAuthTokenResponse:
-        """
-        Refresh TikTok access token.
-        
-        Args:
-            refresh_token: Valid refresh token
-            
-        Returns:
-            OAuthTokenResponse with new tokens
-        """
         payload = {
             "client_key": self.config.client_id,
             "client_secret": self.config.client_secret,

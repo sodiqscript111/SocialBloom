@@ -1,7 +1,3 @@
-"""
-Social Connection Service
-Business logic for managing social platform connections.
-"""
 from datetime import datetime, timedelta
 from typing import List, Optional
 from sqlalchemy.orm import Session
@@ -13,21 +9,11 @@ from oauth.base import OAuthError, SocialProfile, OAuthTokenResponse
 
 
 class SocialConnectionService:
-    """Service for managing social platform connections."""
     
     def __init__(self, db: Session):
         self.db = db
     
     def get_user_connections(self, user_id: int) -> List[SocialConnection]:
-        """
-        Get all social connections for a user.
-        
-        Args:
-            user_id: User's database ID
-            
-        Returns:
-            List of SocialConnection objects
-        """
         return self.db.query(SocialConnection).filter(
             SocialConnection.user_id == user_id
         ).all()
@@ -37,16 +23,6 @@ class SocialConnectionService:
         user_id: int, 
         platform: str
     ) -> Optional[SocialConnection]:
-        """
-        Get a specific platform connection for a user.
-        
-        Args:
-            user_id: User's database ID
-            platform: Platform name
-            
-        Returns:
-            SocialConnection if found, None otherwise
-        """
         return self.db.query(SocialConnection).filter(
             SocialConnection.user_id == user_id,
             SocialConnection.platform == platform
@@ -59,28 +35,13 @@ class SocialConnectionService:
         tokens: OAuthTokenResponse,
         profile: SocialProfile
     ) -> SocialConnection:
-        """
-        Create or update a social connection after successful OAuth.
-        
-        Args:
-            user_id: User's database ID
-            platform: Platform name
-            tokens: OAuth tokens from exchange
-            profile: User profile from platform
-            
-        Returns:
-            Created or updated SocialConnection
-        """
-        # Check if connection already exists
         existing = self.get_connection_by_platform(user_id, platform)
         
-        # Calculate token expiration
         expires_at = None
         if tokens.expires_in:
             expires_at = datetime.utcnow() + timedelta(seconds=tokens.expires_in)
         
         if existing:
-            # Update existing connection
             existing.platform_user_id = profile.platform_user_id
             existing.platform_username = profile.username
             existing.display_name = profile.display_name
@@ -94,7 +55,6 @@ class SocialConnectionService:
             self.db.refresh(existing)
             return existing
         
-        # Create new connection
         new_connection = SocialConnection(
             user_id=user_id,
             platform=SocialPlatform(platform),
@@ -115,19 +75,6 @@ class SocialConnectionService:
         return new_connection
     
     def delete_connection(self, user_id: int, connection_id: int) -> bool:
-        """
-        Delete a social connection.
-        
-        Args:
-            user_id: User's database ID
-            connection_id: Connection ID to delete
-            
-        Returns:
-            True if deleted, False if not found
-            
-        Raises:
-            HTTPException: If connection doesn't belong to user
-        """
         connection = self.db.query(SocialConnection).filter(
             SocialConnection.id == connection_id
         ).first()
@@ -150,19 +97,6 @@ class SocialConnectionService:
         user_id: int, 
         platform: str
     ) -> SocialConnection:
-        """
-        Refresh the access token for a connection.
-        
-        Args:
-            user_id: User's database ID
-            platform: Platform name
-            
-        Returns:
-            Updated SocialConnection
-            
-        Raises:
-            HTTPException: If connection not found or refresh fails
-        """
         connection = self.get_connection_by_platform(user_id, platform)
         
         if not connection:
@@ -182,7 +116,6 @@ class SocialConnectionService:
             new_tokens = await provider.refresh_access_token(connection.refresh_token)
             await provider.close()
             
-            # Update connection with new tokens
             connection.access_token = new_tokens.access_token
             if new_tokens.refresh_token:
                 connection.refresh_token = new_tokens.refresh_token
@@ -206,16 +139,6 @@ class SocialConnectionService:
         user_id: int, 
         platform: str
     ) -> SocialConnection:
-        """
-        Sync profile data (follower count, etc.) from the platform.
-        
-        Args:
-            user_id: User's database ID
-            platform: Platform name
-            
-        Returns:
-            Updated SocialConnection
-        """
         connection = self.get_connection_by_platform(user_id, platform)
         
         if not connection:
@@ -229,7 +152,6 @@ class SocialConnectionService:
             profile = await provider.get_user_profile(connection.access_token)
             await provider.close()
             
-            # Update profile data
             connection.platform_username = profile.username
             connection.display_name = profile.display_name
             connection.follower_count = profile.follower_count

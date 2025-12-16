@@ -25,7 +25,6 @@ async def login_user(
     user: UserLogin, 
     service: UserService = Depends(get_user_service)
 ):
-    """Authenticate user and return JWT tokens."""
     db_user = service.authenticate_user(user)
     return create_token_pair(
         user_id=db_user.id,
@@ -53,7 +52,6 @@ async def update_user(
     current_user: TokenData = Depends(get_current_user),
     service: UserService = Depends(get_user_service)
 ):
-    """Update user profile. Requires authentication."""
     return service.update_user(user_id, user)
 
 @router.delete("/users/{user_id}", response_model=UserResponse)
@@ -62,7 +60,6 @@ async def delete_user(
     current_user: TokenData = Depends(get_current_user),
     service: UserService = Depends(get_user_service)
 ):
-    """Delete user. Requires authentication."""
     return service.delete_user(user_id)
 
 @router.get("/creators", response_model=List[UserResponse])

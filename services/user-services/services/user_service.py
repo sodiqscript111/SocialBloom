@@ -11,7 +11,6 @@ class UserService:
         self.db = db
 
     def create_user(self, user: UserCreate) -> User:
-        # Check if user already exists
         db_user = self.db.query(User).filter(User.email == user.email).first()
         if db_user:
             raise HTTPException(
@@ -19,7 +18,6 @@ class UserService:
                 detail="Email already registered"
             )
         
-        # Create new user
         new_user = User(
             email=user.email,
             password_hash=hash_password(user.password),
@@ -58,21 +56,17 @@ class UserService:
                 detail="User not found"
             )
         
-        # Update basic user info
         if user_update.email:
             db_user.email = user_update.email
         if user_update.role:
             db_user.role = user_update.role
             
-        # Handle creator profile updates
         if user_update.creator_profile and db_user.role == UserRole.CREATOR:
             if not db_user.creator_profile:
-                # Create profile if it doesn't exist
                 db_profile = CreatorProfile(user_id=db_user.id)
                 self.db.add(db_profile)
                 db_user.creator_profile = db_profile
             
-            # Update profile fields
             profile_data = user_update.creator_profile.dict(exclude_unset=True)
             for key, value in profile_data.items():
                 setattr(db_user.creator_profile, key, value)

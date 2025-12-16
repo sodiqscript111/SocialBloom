@@ -1,7 +1,3 @@
-"""
-YouTube/Google OAuth Provider
-Implements OAuth 2.0 flow for YouTube Data API.
-"""
 from urllib.parse import urlencode
 from typing import Optional
 
@@ -10,11 +6,6 @@ from oauth.config import YouTubeConfig
 
 
 class YouTubeOAuthProvider(BaseOAuthProvider):
-    """
-    YouTube/Google OAuth 2.0 implementation.
-    
-    Docs: https://developers.google.com/youtube/v3/guides/auth/server-side-web-apps
-    """
     
     def __init__(self, config: Optional[YouTubeConfig] = None):
         from oauth.config import get_youtube_config
@@ -25,36 +16,18 @@ class YouTubeOAuthProvider(BaseOAuthProvider):
         return "youtube"
     
     def get_authorization_url(self, state: str) -> str:
-        """
-        Generate Google OAuth authorization URL.
-        
-        Args:
-            state: CSRF protection state token
-            
-        Returns:
-            Google OAuth authorization URL
-        """
         params = {
             "client_id": self.config.client_id,
             "response_type": "code",
             "scope": " ".join(self.config.scopes),
             "redirect_uri": self.config.redirect_uri,
             "state": state,
-            "access_type": "offline",  # Required for refresh token
-            "prompt": "consent"  # Force consent to get refresh token
+            "access_type": "offline",
+            "prompt": "consent"
         }
         return f"{self.config.auth_url}?{urlencode(params)}"
     
     async def exchange_code_for_token(self, code: str) -> OAuthTokenResponse:
-        """
-        Exchange authorization code for Google access token.
-        
-        Args:
-            code: Authorization code from callback
-            
-        Returns:
-            OAuthTokenResponse with tokens
-        """
         payload = {
             "client_id": self.config.client_id,
             "client_secret": self.config.client_secret,
@@ -94,15 +67,6 @@ class YouTubeOAuthProvider(BaseOAuthProvider):
         )
     
     async def get_user_profile(self, access_token: str) -> SocialProfile:
-        """
-        Fetch YouTube channel profile.
-        
-        Args:
-            access_token: Valid Google access token
-            
-        Returns:
-            SocialProfile with channel data
-        """
         params = {
             "part": "snippet,statistics",
             "mine": "true"
@@ -130,7 +94,6 @@ class YouTubeOAuthProvider(BaseOAuthProvider):
                 str(data["error"].get("code"))
             )
         
-        # Get first channel (usually only one for personal accounts)
         items = data.get("items", [])
         if not items:
             raise OAuthError(
@@ -150,20 +113,11 @@ class YouTubeOAuthProvider(BaseOAuthProvider):
             profile_url=f"https://www.youtube.com/channel/{channel.get('id', '')}",
             avatar_url=snippet.get("thumbnails", {}).get("default", {}).get("url"),
             follower_count=int(statistics.get("subscriberCount", 0)),
-            following_count=0,  # YouTube doesn't expose this
+            following_count=0,
             bio=snippet.get("description")
         )
     
     async def refresh_access_token(self, refresh_token: str) -> OAuthTokenResponse:
-        """
-        Refresh Google access token.
-        
-        Args:
-            refresh_token: Valid refresh token
-            
-        Returns:
-            OAuthTokenResponse with new access token
-        """
         payload = {
             "client_id": self.config.client_id,
             "client_secret": self.config.client_secret,
@@ -188,7 +142,7 @@ class YouTubeOAuthProvider(BaseOAuthProvider):
         
         return OAuthTokenResponse(
             access_token=data["access_token"],
-            refresh_token=refresh_token,  # Google doesn't return new refresh token
+            refresh_token=refresh_token,
             expires_in=data.get("expires_in"),
             token_type=data.get("token_type", "Bearer")
         )
