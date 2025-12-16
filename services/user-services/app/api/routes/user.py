@@ -2,9 +2,11 @@ from fastapi import APIRouter, Depends
 from typing import List, Optional
 from decimal import Decimal
 from sqlalchemy.orm import Session
-from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdate
+from app.schemas.user import UserCreate, UserResponse, UserLogin, UserUpdate, Token
 from db.database import get_db
 from services.user_service import UserService
+from utils.jwt_handler import create_token_pair
+from utils.auth_dependencies import get_current_user, TokenData
 
 router = APIRouter()
 
@@ -18,12 +20,18 @@ async def register_user(
 ):
     return service.create_user(user)
 
-@router.post("/login", response_model=UserResponse)
+@router.post("/login", response_model=Token)
 async def login_user(
     user: UserLogin, 
     service: UserService = Depends(get_user_service)
 ):
-    return service.authenticate_user(user)
+    """Authenticate user and return JWT tokens."""
+    db_user = service.authenticate_user(user)
+    return create_token_pair(
+        user_id=db_user.id,
+        email=db_user.email,
+        role=db_user.role.value
+    )
 
 @router.get("/users", response_model=List[UserResponse])
 async def get_users(
@@ -42,15 +50,19 @@ async def get_user_by_id(
 async def update_user(
     user_id: int,
     user: UserUpdate,
+    current_user: TokenData = Depends(get_current_user),
     service: UserService = Depends(get_user_service)
 ):
+    """Update user profile. Requires authentication."""
     return service.update_user(user_id, user)
 
 @router.delete("/users/{user_id}", response_model=UserResponse)
 async def delete_user(
     user_id: int,
+    current_user: TokenData = Depends(get_current_user),
     service: UserService = Depends(get_user_service)
 ):
+    """Delete user. Requires authentication."""
     return service.delete_user(user_id)
 
 @router.get("/creators", response_model=List[UserResponse])

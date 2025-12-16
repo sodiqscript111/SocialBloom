@@ -13,9 +13,16 @@ class SocialConnectionBase(BaseModel):
 class SocialConnectionCreate(SocialConnectionBase):
     access_token: str
 
-class SocialConnectionResponse(SocialConnectionBase):
+class SocialConnectionResponse(BaseModel):
     id: int
+    platform: SocialPlatform
+    platform_user_id: Optional[str] = None
+    platform_username: str
+    display_name: Optional[str] = None
+    profile_url: str
+    avatar_url: Optional[str] = None
     follower_count: int
+    connected_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -73,3 +80,16 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+
+
+# --- Token Schemas ---
+class Token(BaseModel):
+    """Response model for login endpoint."""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+
+class TokenRefresh(BaseModel):
+    """Request model for token refresh."""
+    refresh_token: str

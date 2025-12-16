@@ -5,16 +5,20 @@ from datetime import datetime
 from app.models.booking import BookingStatus
 
 class BookingBase(BaseModel):
-    business_id: int
     creator_id: int
     price: Decimal
     requirements: str
 
 class BookingCreate(BookingBase):
+    """Request model for creating a booking. business_id comes from JWT token."""
     pass
 
-class BookingResponse(BookingBase):
+class BookingResponse(BaseModel):
     id: int
+    business_id: int
+    creator_id: int
+    price: Decimal
+    requirements: str
     status: BookingStatus
     created_at: datetime
     updated_at: Optional[datetime] = None
