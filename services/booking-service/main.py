@@ -1,6 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
-from app.api.routes import booking, campaign, payment, notification
+from app.api.routes import booking, campaign, payment, notification, review, chat
 from events.consumer import start_booking_event_consumer
 
 app = FastAPI(title="Booking Service", version="1.0.0")
@@ -9,6 +9,8 @@ app.include_router(booking.router)
 app.include_router(campaign.router)
 app.include_router(payment.router)
 app.include_router(notification.router)
+app.include_router(review.router)
+app.include_router(chat.router)
 
 @app.on_event("startup")
 async def startup_event():

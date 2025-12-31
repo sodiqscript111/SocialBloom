@@ -14,6 +14,8 @@ from app.models.booking import Booking
 from app.models.campaign import Campaign
 from app.models.payment import Payment
 from app.models.notification import Notification
+from app.models.review import Review
+from app.models.chat import Conversation, Message
 
 config = context.config
 

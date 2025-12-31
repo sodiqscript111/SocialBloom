@@ -17,6 +17,8 @@ class NotificationType(str, enum.Enum):
     PAYMENT_REFUNDED = "payment_refunded"
     CAMPAIGN_STARTED = "campaign_started"
     CAMPAIGN_ENDED = "campaign_ended"
+    NEW_MESSAGE = "new_message"
+    NEW_REVIEW = "new_review"
 
 class Notification(Base):
     __tablename__ = "notifications"
