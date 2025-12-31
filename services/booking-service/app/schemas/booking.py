@@ -10,8 +10,14 @@ class BookingBase(BaseModel):
     requirements: str
 
 class BookingCreate(BookingBase):
-    """Request model for creating a booking. business_id comes from JWT token."""
-    pass
+    campaign_id: Optional[int] = None
+
+class BookingUpdate(BaseModel):
+    price: Optional[Decimal] = None
+    requirements: Optional[str] = None
+
+class BookingStatusUpdate(BaseModel):
+    status: BookingStatus
 
 class BookingResponse(BaseModel):
     id: int
@@ -20,6 +26,7 @@ class BookingResponse(BaseModel):
     price: Decimal
     requirements: str
     status: BookingStatus
+    campaign_id: Optional[int] = None
     created_at: datetime
     updated_at: Optional[datetime] = None
 

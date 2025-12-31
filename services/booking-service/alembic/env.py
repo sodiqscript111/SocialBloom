@@ -10,8 +10,10 @@ from alembic import context
 sys.path.append(os.getcwd())
 
 from db.database import Base
-from app.models.user import User, CreatorProfile, SocialConnection
-from app.models.matching import SavedCreator
+from app.models.booking import Booking
+from app.models.campaign import Campaign
+from app.models.payment import Payment
+from app.models.notification import Notification
 
 config = context.config
 
