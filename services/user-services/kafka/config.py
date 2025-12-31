@@ -1,6 +1,7 @@
 from kafka import KafkaProducer, KafkaConsumer
+from config import settings
 
-KAFKA_BOOTSTRAP_SERVERS = ["localhost:9092"]
+KAFKA_BOOTSTRAP_SERVERS = settings.kafka_bootstrap_servers.split(",")
 
 def get_producer():
     return KafkaProducer(

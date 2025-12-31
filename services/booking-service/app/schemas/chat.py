@@ -1,9 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from datetime import datetime
+from utils.sanitize import sanitize_string
 
 class MessageCreate(BaseModel):
-    content: str
+    content: str = Field(..., min_length=1, max_length=2000)
+
+    @field_validator('content')
+    @classmethod
+    def sanitize_content(cls, v):
+        return sanitize_string(v, max_length=2000)
 
 class MessageResponse(BaseModel):
     id: int
@@ -19,7 +25,14 @@ class MessageResponse(BaseModel):
 class ConversationCreate(BaseModel):
     participant_id: int
     booking_id: Optional[int] = None
-    initial_message: Optional[str] = None
+    initial_message: Optional[str] = Field(None, max_length=2000)
+
+    @field_validator('initial_message')
+    @classmethod
+    def sanitize_message(cls, v):
+        if v:
+            return sanitize_string(v, max_length=2000)
+        return v
 
 class ConversationResponse(BaseModel):
     id: int

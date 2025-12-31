@@ -1,11 +1,19 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 from datetime import datetime
+from utils.sanitize import sanitize_string
 
 class ReviewCreate(BaseModel):
     booking_id: int
     rating: int = Field(..., ge=1, le=5, description="Rating from 1 to 5")
-    comment: Optional[str] = None
+    comment: Optional[str] = Field(None, max_length=1000)
+
+    @field_validator('comment')
+    @classmethod
+    def sanitize_comment(cls, v):
+        if v:
+            return sanitize_string(v, max_length=1000)
+        return v
 
 class ReviewResponse(BaseModel):
     id: int

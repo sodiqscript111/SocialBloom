@@ -1,27 +1,54 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List
 from decimal import Decimal
 from datetime import datetime
 from app.models.campaign import CampaignStatus
 from app.schemas.booking import BookingResponse
+from utils.sanitize import sanitize_string
 
 class CampaignBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    budget: Optional[Decimal] = None
+    name: str = Field(..., min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    budget: Optional[Decimal] = Field(None, gt=0, le=10000000)
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
+
+    @field_validator('name')
+    @classmethod
+    def sanitize_name(cls, v):
+        return sanitize_string(v, max_length=200)
+
+    @field_validator('description')
+    @classmethod
+    def sanitize_description(cls, v):
+        if v:
+            return sanitize_string(v, max_length=2000)
+        return v
 
 class CampaignCreate(CampaignBase):
     pass
 
 class CampaignUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    budget: Optional[Decimal] = None
+    name: Optional[str] = Field(None, min_length=1, max_length=200)
+    description: Optional[str] = Field(None, max_length=2000)
+    budget: Optional[Decimal] = Field(None, gt=0, le=10000000)
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     status: Optional[CampaignStatus] = None
+
+    @field_validator('name')
+    @classmethod
+    def sanitize_name(cls, v):
+        if v:
+            return sanitize_string(v, max_length=200)
+        return v
+
+    @field_validator('description')
+    @classmethod
+    def sanitize_description(cls, v):
+        if v:
+            return sanitize_string(v, max_length=2000)
+        return v
 
 class CampaignResponse(CampaignBase):
     id: int
