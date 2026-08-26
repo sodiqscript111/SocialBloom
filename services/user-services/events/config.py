@@ -21,11 +21,11 @@ def setup_rabbitmq():
         connection = get_rabbitmq_connection()
         channel = connection.channel()
         
-        # Declare the booking_events exchange
-        channel.exchange_declare(exchange='booking_events', exchange_type='fanout')
-        
-        # Declare the user_events exchange (since we consume from it)
+        # Declare the user_events exchange
         channel.exchange_declare(exchange='user_events', exchange_type='fanout')
+        
+        # Declare the booking_events exchange (since we consume from it)
+        channel.exchange_declare(exchange='booking_events', exchange_type='fanout')
         
         connection.close()
     except Exception as e:

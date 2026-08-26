@@ -9,5 +9,10 @@ app.include_router(auth.router)
 app.include_router(social.router)
 app.include_router(matching.router)
 
+@app.on_event("startup")
+async def startup_event():
+    from events.consumer import start_user_event_consumer
+    start_user_event_consumer()
+
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
