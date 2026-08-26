@@ -11,6 +11,8 @@ import (
 	pb "github.com/sodiqscript111/socialbloom/notification-service/pb"
 	"github.com/sodiqscript111/socialbloom/notification-service/server"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/health"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -29,6 +31,11 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 	pb.RegisterNotificationServiceServer(grpcServer, &server.NotificationServer{})
+	
+	// Register gRPC health check service (used by K8s liveness/readiness probes)
+	healthServer := health.NewServer()
+	healthServer.SetServingStatus("", grpc_health_v1.HealthCheckResponse_SERVING)
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthServer)
 	
 	// Register reflection service on gRPC server. (useful for grpcurl)
 	reflection.Register(grpcServer)

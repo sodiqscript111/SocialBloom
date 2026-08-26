@@ -5,6 +5,10 @@ from events.consumer import start_booking_event_consumer
 
 app = FastAPI(title="Booking Service", version="1.0.0")
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 app.include_router(booking.router)
 app.include_router(campaign.router)
 app.include_router(payment.router)

@@ -1,0 +1,68 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: socialboom-gateway
+  namespace: socialboom
+spec:
+  selector:
+    istio: ingressgateway # use istio default ingress gateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: socialboom-virtual-service
+  namespace: socialboom
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - socialboom-gateway
+  http:
+  # Route Notification Service (gRPC)
+  - match:
+    - uri:
+        prefix: /notification.NotificationService/
+    route:
+    - destination:
+        host: notification-service
+        port:
+          number: 50051
+  # Route User Service (REST)
+  - match:
+    - uri:
+        prefix: /users
+    - uri:
+        prefix: /register
+    - uri:
+        prefix: /login
+    - uri:
+        prefix: /oauth
+    route:
+    - destination:
+        host: user-service
+        port:
+          number: 8000
+  # Route Booking Service (REST)
+  - match:
+    - uri:
+        prefix: /bookings
+    - uri:
+        prefix: /campaigns
+    - uri:
+        prefix: /payments
+    - uri:
+        prefix: /reviews
+    - uri:
+        prefix: /chat
+    route:
+    - destination:
+        host: booking-service
+        port:
+          number: 8001
