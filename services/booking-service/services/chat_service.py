@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc
 from fastapi import HTTPException, status
 from app.models.chat import Conversation, Message
-from grpc_clients.notification_client import notification_client
+from grpc_clients.notification_client import notify
 from app.schemas.chat import ConversationCreate, MessageCreate, ConversationResponse, MessageResponse
 
 
@@ -12,13 +12,13 @@ class ChatService:
         self.db = db
 
     def _create_message_notification(self, recipient_id: int, sender_id: int, conversation_id: int):
-        import json
-        notification_client.send_notification(
-            user_id=str(recipient_id),
-            type="NEW_MESSAGE",
+        notify(
+            user_id=recipient_id,
+            notif_type="NEW_MESSAGE",
             title="New Message",
             message="You have received a new message",
-            data=json.dumps({"conversation_id": conversation_id, "sender_id": sender_id})
+            conversation_id=conversation_id,
+            sender_id=sender_id
         )
 
     def get_or_create_conversation(

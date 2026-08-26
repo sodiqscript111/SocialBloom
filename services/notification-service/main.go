@@ -4,6 +4,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/sodiqscript111/socialbloom/notification-service/db"
 	pb "github.com/sodiqscript111/socialbloom/notification-service/pb"
@@ -32,7 +34,18 @@ func main() {
 	reflection.Register(grpcServer)
 
 	log.Printf("Notification gRPC service listening on port %s...", port)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("Failed to serve: %v", err)
-	}
+	
+	go func() {
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("Failed to serve: %v", err)
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down gracefully...")
+	grpcServer.GracefulStop()
+	log.Println("Server stopped")
 }

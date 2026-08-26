@@ -83,18 +83,23 @@ func (s *NotificationServer) GetNotifications(ctx context.Context, req *pb.GetNo
 func (s *NotificationServer) StreamNotifications(req *pb.StreamNotificationsRequest, stream pb.NotificationService_StreamNotificationsServer) error {
 	lastCheck := time.Now().UTC()
 
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
 	for {
-		// A simple simulated streaming heartbeat
 		select {
 		case <-stream.Context().Done():
 			return nil
-		default:
-		}
+		case <-ticker.C:
+			var newNotifs []models.Notification
+			err := db.DB.Where("user_id = ? AND created_at > ?", req.UserId, lastCheck).Order("created_at asc").Find(&newNotifs).Error
+			
+			if err != nil {
+				// Log the error but don't drop the stream for a transient DB blip
+				// In a real app, you might want to break after X consecutive failures
+				continue
+			}
 
-		var newNotifs []models.Notification
-		err := db.DB.Where("user_id = ? AND created_at > ?", req.UserId, lastCheck).Order("created_at asc").Find(&newNotifs).Error
-		
-		if err == nil {
 			for _, n := range newNotifs {
 				msg := &pb.NotificationMessage{
 					Id:        n.ID,
@@ -112,8 +117,6 @@ func (s *NotificationServer) StreamNotifications(req *pb.StreamNotificationsRequ
 				lastCheck = n.CreatedAt
 			}
 		}
-
-		time.Sleep(2 * time.Second)
 	}
 }
 
