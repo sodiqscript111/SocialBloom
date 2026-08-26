@@ -4,6 +4,8 @@ package notification;
 
 import "google/protobuf/timestamp.proto";
 
+option go_package = "github.com/sodiqscript111/socialbloom/notification-service/pb";
+
 service NotificationService {
   rpc SendNotification (SendNotificationRequest) returns (NotificationResponse);
   rpc GetNotifications (GetNotificationsRequest) returns (GetNotificationsResponse);
