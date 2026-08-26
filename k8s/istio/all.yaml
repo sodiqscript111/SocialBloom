@@ -5,7 +5,7 @@ metadata:
   namespace: socialboom
 spec:
   selector:
-    istio: ingressgateway # use istio default ingress gateway
+    istio: ingressgateway
   servers:
   - port:
       number: 80
@@ -25,7 +25,6 @@ spec:
   gateways:
   - socialboom-gateway
   http:
-  # Route Notification Service (gRPC)
   - match:
     - uri:
         prefix: /notification.NotificationService/
@@ -34,7 +33,10 @@ spec:
         host: notification-service
         port:
           number: 50051
-  # Route User Service (REST)
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: connect-failure,refused-stream,unavailable,cancelled,retriable-status-codes
   - match:
     - uri:
         prefix: /users
@@ -49,7 +51,10 @@ spec:
         host: user-service
         port:
           number: 8000
-  # Route Booking Service (REST)
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,connect-failure,gateway-error
   - match:
     - uri:
         prefix: /bookings
@@ -66,3 +71,61 @@ spec:
         host: booking-service
         port:
           number: 8001
+    retries:
+      attempts: 3
+      perTryTimeout: 2s
+      retryOn: 5xx,connect-failure,gateway-error
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: booking-destination-rule
+  namespace: socialboom
+spec:
+  host: booking-service
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 1m
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: user-destination-rule
+  namespace: socialboom
+spec:
+  host: user-service
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 1m
+      maxEjectionPercent: 50
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: notification-destination-rule
+  namespace: socialboom
+spec:
+  host: notification-service
+  trafficPolicy:
+    connectionPool:
+      http:
+        http2MaxRequests: 1000
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutiveGatewayErrors: 5
+      interval: 10s
+      baseEjectionTime: 1m
+      maxEjectionPercent: 50
