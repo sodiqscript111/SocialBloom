@@ -1,0 +1,119 @@
+static_resources:
+  listeners:
+  - name: listener_0
+    address:
+      socket_address:
+        address: 0.0.0.0
+        port_value: 9000
+    filter_chains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          stat_prefix: ingress_http
+          codec_type: AUTO
+          route_config:
+            name: local_route
+            virtual_hosts:
+            - name: backend
+              domains:
+              - "*"
+              routes:
+              # gRPC Routing (Notification Service)
+              - match:
+                  prefix: "/notification.NotificationService/"
+                route:
+                  cluster: notification_service
+              # REST Routing (User Service)
+              - match:
+                  prefix: "/users"
+                route:
+                  cluster: user_service
+              - match:
+                  prefix: "/register"
+                route:
+                  cluster: user_service
+              - match:
+                  prefix: "/login"
+                route:
+                  cluster: user_service
+              - match:
+                  prefix: "/creators"
+                route:
+                  cluster: user_service
+              - match:
+                  prefix: "/social"
+                route:
+                  cluster: user_service
+              # REST Routing (Booking Service)
+              - match:
+                  prefix: "/bookings"
+                route:
+                  cluster: booking_service
+              - match:
+                  prefix: "/campaigns"
+                route:
+                  cluster: booking_service
+              - match:
+                  prefix: "/payments"
+                route:
+                  cluster: booking_service
+              - match:
+                  prefix: "/reviews"
+                route:
+                  cluster: booking_service
+              - match:
+                  prefix: "/chat"
+                route:
+                  cluster: booking_service
+          http_filters:
+          - name: envoy.filters.http.grpc_web
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_web.v3.GrpcWeb
+          - name: envoy.filters.http.router
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+  - name: user_service
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: user_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: user-service
+                port_value: 8000
+
+  - name: booking_service
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: booking_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: booking-service
+                port_value: 8001
+
+  - name: notification_service
+    connect_timeout: 0.25s
+    type: STRICT_DNS
+    http2_protocol_options: {}
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: notification_service
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: notification-service
+                port_value: 50051

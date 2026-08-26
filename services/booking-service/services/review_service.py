@@ -4,7 +4,7 @@ from sqlalchemy import func as sql_func
 from fastapi import HTTPException, status
 from app.models.review import Review
 from app.models.booking import Booking, BookingStatus
-from app.models.notification import Notification, NotificationType
+from grpc_clients.notification_client import notification_client
 from app.schemas.review import ReviewCreate, UserRatingStats
 
 
@@ -13,14 +13,14 @@ class ReviewService:
         self.db = db
 
     def _create_review_notification(self, reviewed_id: int, reviewer_id: int, rating: int, booking_id: int):
-        notification = Notification(
-            user_id=reviewed_id,
-            type=NotificationType.NEW_REVIEW,
+        import json
+        notification_client.send_notification(
+            user_id=str(reviewed_id),
+            type="NEW_REVIEW",
             title="New Review Received",
             message=f"You received a {rating}-star review",
-            data={"booking_id": booking_id, "reviewer_id": reviewer_id, "rating": rating}
+            data=json.dumps({"booking_id": booking_id, "reviewer_id": reviewer_id, "rating": rating})
         )
-        self.db.add(notification)
 
     def create_review(self, review_data: ReviewCreate, reviewer_id: int, reviewer_role: str) -> Review:
         booking = self.db.query(Booking).filter(

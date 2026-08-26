@@ -31,3 +31,5 @@ httpx==0.26.0
 # Development
 pytest==7.4.3
 pytest-asyncio==0.21.1
+grpcio==1.60.0
+grpcio-tools==1.60.0

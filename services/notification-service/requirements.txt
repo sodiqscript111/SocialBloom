@@ -1,0 +1,6 @@
+grpcio==1.60.0
+grpcio-tools==1.60.0
+SQLAlchemy==2.0.25
+psycopg[binary]==3.1.18
+python-dotenv==1.0.0
+alembic==1.13.1

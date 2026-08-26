@@ -5,10 +5,9 @@ from app.models.booking import Booking, BookingStatus, VALID_STATUS_TRANSITIONS
 from app.schemas.booking import BookingCreate, BookingUpdate, BookingStatusUpdate
 from events.producer import (
     emit_booking_created,
-    emit_booking_status_changed,
-    creator_notification,
-    business_notification
+    emit_booking_status_changed
 )
+from grpc_clients.notification_client import notification_client
 
 
 class BookingService:
@@ -28,7 +27,14 @@ class BookingService:
         self.db.refresh(new_booking)
 
         emit_booking_created(new_booking.id, booking.creator_id, business_id)
-        creator_notification(booking.creator_id, new_booking.id, "new_booking")
+        import json
+        notification_client.send_notification(
+            user_id=str(booking.creator_id),
+            type="NEW_BOOKING",
+            title="New Booking Request",
+            message="You have a new booking request",
+            data=json.dumps({"booking_id": new_booking.id})
+        )
 
         return new_booking
 
@@ -151,10 +157,15 @@ class BookingService:
 
         emit_booking_status_changed(booking_id, old_status.value, new_status.value, user_id)
 
-        if role == "creator":
-            business_notification(booking.business_id, booking_id, f"booking_{new_status.value}")
-        else:
-            creator_notification(booking.creator_id, booking_id, f"booking_{new_status.value}")
+        import json
+        recipient_id = booking.business_id if role == "creator" else booking.creator_id
+        notification_client.send_notification(
+            user_id=str(recipient_id),
+            type="BOOKING_UPDATE",
+            title=f"Booking Status Updated",
+            message=f"Booking status is now {new_status.value}",
+            data=json.dumps({"booking_id": booking_id, "new_status": new_status.value})
+        )
 
         return booking
 

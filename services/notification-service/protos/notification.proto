@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package notification;
+
+import "google/protobuf/timestamp.proto";
+
+service NotificationService {
+  rpc SendNotification (SendNotificationRequest) returns (NotificationResponse);
+  rpc GetNotifications (GetNotificationsRequest) returns (GetNotificationsResponse);
+  rpc StreamNotifications (StreamNotificationsRequest) returns (stream NotificationMessage);
+  rpc MarkAsRead (MarkAsReadRequest) returns (MarkAsReadResponse);
+}
+
+message SendNotificationRequest {
+  string user_id = 1;
+  string type = 2; // e.g., "chat", "booking_update", "review"
+  string title = 3;
+  string message = 4;
+  string data = 5; // JSON string payload
+}
+
+message NotificationResponse {
+  bool success = 1;
+  string notification_id = 2;
+}
+
+message GetNotificationsRequest {
+  string user_id = 1;
+  bool unread_only = 2;
+  int32 limit = 3;
+  int32 offset = 4;
+}
+
+message GetNotificationsResponse {
+  repeated NotificationMessage notifications = 1;
+  int32 total_count = 2;
+}
+
+message StreamNotificationsRequest {
+  string user_id = 1;
+}
+
+message NotificationMessage {
+  string id = 1;
+  string user_id = 2;
+  string type = 3;
+  string title = 4;
+  string message = 5;
+  string data = 6;
+  bool is_read = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message MarkAsReadRequest {
+  string notification_id = 1;
+  string user_id = 2;
+}
+
+message MarkAsReadResponse {
+  bool success = 1;
+}
