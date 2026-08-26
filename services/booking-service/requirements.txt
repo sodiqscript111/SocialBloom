@@ -5,7 +5,7 @@ uvicorn[standard]==0.27.0
 # Database
 sqlalchemy==2.0.25
 alembic==1.13.1
-psycopg[binary]==3.1.18
+psycopg[binary]==3.3.4
 
 
 # Redis
@@ -31,5 +31,5 @@ httpx==0.26.0
 # Development
 pytest==7.4.3
 pytest-asyncio==0.21.1
-grpcio==1.60.0
-grpcio-tools==1.60.0
+grpcio==1.64.1
+grpcio-tools==1.64.1
