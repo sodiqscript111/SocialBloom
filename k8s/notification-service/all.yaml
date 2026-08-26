@@ -43,7 +43,10 @@ spec:
           protocol: TCP
         env:
         - name: DATABASE_URL
-          value: "postgres://postgres:password@postgres:5432/notificationsdb?sslmode=disable"
+          valueFrom:
+            secretKeyRef:
+              name: socialboom-secrets
+              key: notification-db-url
         resources:
           requests:
             memory: "64Mi"

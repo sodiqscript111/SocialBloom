@@ -42,13 +42,19 @@ spec:
           protocol: TCP
         env:
         - name: DATABASE_URL
-          value: "postgresql+psycopg://postgres:password@postgres:5432/bookingsdb"
+          valueFrom:
+            secretKeyRef:
+              name: socialboom-secrets
+              key: booking-db-url
         - name: RABBITMQ_URL
           value: "amqp://guest:guest@rabbitmq:5672/"
         - name: NOTIFICATION_SERVICE_HOST
           value: "notification-service:50051"
         - name: JWT_SECRET_KEY
-          value: "supersecretjwtkeythatshouldbechangedinprod"
+          valueFrom:
+            secretKeyRef:
+              name: socialboom-secrets
+              key: jwt-secret-key
         resources:
           requests:
             memory: "128Mi"
