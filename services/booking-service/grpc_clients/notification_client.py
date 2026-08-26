@@ -2,6 +2,9 @@ import os
 import grpc
 import json
 import logging
+import os
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), 'protos'))
 from grpc_clients.protos import notification_pb2, notification_pb2_grpc
 
 logger = logging.getLogger(__name__)

@@ -7,7 +7,6 @@ from app.schemas.booking import BookingCreate, BookingUpdate, BookingStatusUpdat
 from services.booking_service import BookingService
 from auth.dependencies import get_current_user, require_business_owner, require_creator, TokenData
 
-Base.metadata.create_all(bind=engine)
 
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 

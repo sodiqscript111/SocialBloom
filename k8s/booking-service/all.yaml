@@ -37,6 +37,7 @@ spec:
       containers:
       - name: booking-service
         image: socialboom/booking-service:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 8001
           protocol: TCP

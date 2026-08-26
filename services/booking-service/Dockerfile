@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Generate gRPC client protos
-RUN python -m grpc_tools.protoc -Igrpc_clients/protos --python_out=grpc_clients --grpc_python_out=grpc_clients grpc_clients/protos/notification.proto
+RUN python -m grpc_tools.protoc -Igrpc_clients/protos --python_out=grpc_clients/protos --grpc_python_out=grpc_clients/protos grpc_clients/protos/notification.proto
 
 EXPOSE 8001
 

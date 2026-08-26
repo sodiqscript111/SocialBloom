@@ -37,6 +37,7 @@ spec:
       containers:
       - name: notification-service
         image: socialboom/notification-service:latest
+        imagePullPolicy: Never
         ports:
         - containerPort: 50051
           name: grpc

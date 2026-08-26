@@ -2,6 +2,11 @@ import uvicorn
 from fastapi import FastAPI
 from app.api.routes import user, auth, social, matching
 
+from db.database import engine
+from app.models.user import Base, User
+
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(title="User Service", version="1.0.0")
 
 @app.get("/health")

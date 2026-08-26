@@ -1,11 +1,11 @@
-FROM golang:1.21-bullseye AS builder
+FROM golang:latest AS builder
 
 WORKDIR /app
 
 # Install protoc and go plugins
 RUN apt-get update && apt-get install -y protobuf-compiler && \
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.31.0 && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0
 
 # Add go bin to path
 ENV PATH="$PATH:$(go env GOPATH)/bin"
