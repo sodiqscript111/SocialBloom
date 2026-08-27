@@ -37,14 +37,14 @@ Currently, scaling is managed by the Kubernetes **Horizontal Pod Autoscaler (HPA
 
 ## 3. Advanced Network Auto-Scaling (Istio + KEDA)
 
-Scaling on CPU is standard, but it isn't always smart. As you noted, we can use Istio's network metrics to scale more intelligently. However, we must be careful with our **scaling conditions** to prevent cascading system failures.
+While CPU-based scaling is standard, it may not optimally reflect service bottlenecks. Network-level metrics (e.g., request rates, queue depths) provide more accurate scaling triggers. However, these metrics must be carefully selected to prevent cascading system failures.
 
-### ❌ The Danger: Scaling on Latency
+### The Danger: Scaling on Latency
 If the PostgreSQL database becomes overwhelmed, database queries will slow down. This causes the `booking-service` HTTP latency to spike. 
-If we configured our autoscaler to say: *"Scale up when latency > 500ms,"* Kubernetes would spin up 10 new `booking-service` pods. Those 10 new pods would instantly open new connections to the already-dying database, **crashing the database completely.** 
+If the autoscaler is configured to scale up when latency exceeds 500ms, Kubernetes will provision additional `booking-service` pods. These new pods will instantly open new connections to the degraded database, potentially crashing the database entirely.
 
-### ✅ The Solution: Smart Scaling Conditions
-To scale safely without destroying downstream systems, we use **KEDA (Kubernetes Event-driven Autoscaling)** hooked into Istio and RabbitMQ:
+### The Solution: Smart Scaling Conditions
+To scale safely without overloading downstream systems, the architecture utilizes **KEDA (Kubernetes Event-driven Autoscaling)** integrated with Istio and RabbitMQ:
 
 1. **Condition 1: Scale on Queue Depth (For Async Workers)**
    - *Logic:* "If the `booking_events` queue in RabbitMQ exceeds 50 pending messages, scale up the `notification-service`."
