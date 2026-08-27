@@ -58,6 +58,10 @@ jobs:
       - name: Verify Go Build
         working-directory: ./services/notification-service
         run: go build -v ./...
+
+      - name: Run Go Unit Tests (with Testcontainers)
+        working-directory: ./services/notification-service
+        run: go test -v ./...
         
       - name: Verify Docker Build
         run: docker build -t socialboom/notification-service:test services/notification-service
