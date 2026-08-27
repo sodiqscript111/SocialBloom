@@ -11,7 +11,6 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"gorm.io/driver/postgres" // renamed import to pgdriver to avoid conflict with testcontainers postgres module? Wait, we can alias it.
 	pgdriver "gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
