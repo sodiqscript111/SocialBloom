@@ -1,97 +1,72 @@
-# SocialBoom System Architecture & Network Flow
+# SocialBoom System Architecture
 
-This document outlines the end-to-end architecture, Kubernetes scaling strategies, and the deep-dive network flow of Istio within the SocialBoom microservice ecosystem.
-
----
-
-## 1. End-to-End System Overview
-
-SocialBoom is a microservice-based platform built for influencer and brand interactions. It is designed to be highly available, scalable, and secure.
-
-### The Microservices (The Workloads)
-1. **User Service (REST / HTTP):** Handles user registration, JWT authentication, and profiles.
-2. **Booking Service (REST / HTTP):** Manages campaigns, payments, and influencer bookings.
-3. **Notification Service (gRPC / Async):** A high-speed service written in Go that handles sending emails and alerts.
-
-### The Backing Services (State & Queues)
-4. **PostgreSQL:** The relational database storing persistent state (users, bookings, campaigns).
-5. **RabbitMQ:** The asynchronous message broker used for decoupling heavy tasks (e.g., emitting a `booking_created` event so the Notification Service can process it without blocking the user).
+SocialBoom is a microservice-based platform designed to connect brands with influencers for marketing campaigns. The architecture is built for high availability, secure service-to-service communication, and event-driven scalability.
 
 ---
 
-## 2. Kubernetes Pods & Scaling
+## 1. High-Level Architecture Overview
 
-### Current Pod Count
-In our local deployment, we are running **5 application pods** and **2 system pods**:
-- `user-service` (1 Pod)
-- `booking-service` (1 Pod)
-- `notification-service` (1 Pod)
-- `postgres` (1 Pod)
-- `rabbitmq` (1 Pod)
-- *Istio System:* `istio-ingressgateway` (1 Pod) & `istiod` (1 Pod)
+The system follows a domain-driven microservice architecture, containerized via Docker, and orchestrated by Kubernetes. The application relies on asynchronous event-driven patterns for background processing and high-speed synchronous protocols for internal communication.
 
-### How We Scale (The Basics)
-Currently, scaling is managed by the Kubernetes **Horizontal Pod Autoscaler (HPA)**. The HPA continuously monitors the CPU and Memory metrics of the pods. If the `user-service` CPU utilization exceeds 70%, the HPA dynamically provisions additional replicas (up to a maximum limit). 
+### Core Microservices
 
----
+1. **User Service (Python / FastAPI)**
+   - **Responsibility:** Manages user authentication, JWT generation, and creator/brand profiles.
+   - **API Protocol:** REST (HTTP/1.1) for external clients.
+   - **Database:** Connects to the `testing` PostgreSQL schema.
 
-## 3. Advanced Network Auto-Scaling (Istio + KEDA)
+2. **Booking Service (Python / FastAPI)**
+   - **Responsibility:** Handles campaign creation, influencer booking workflows, and payment tracking.
+   - **API Protocol:** REST (HTTP/1.1) for external clients; gRPC for internal upstream calls.
+   - **Database:** Connects to the `bookingsdb` PostgreSQL schema.
 
-While CPU-based scaling is standard, it may not optimally reflect service bottlenecks. Network-level metrics (e.g., request rates, queue depths) provide more accurate scaling triggers. However, these metrics must be carefully selected to prevent cascading system failures.
-
-### The Danger: Scaling on Latency
-If the PostgreSQL database becomes overwhelmed, database queries will slow down. This causes the `booking-service` HTTP latency to spike. 
-If the autoscaler is configured to scale up when latency exceeds 500ms, Kubernetes will provision additional `booking-service` pods. These new pods will instantly open new connections to the degraded database, potentially crashing the database entirely.
-
-### The Solution: Smart Scaling Conditions
-To scale safely without overloading downstream systems, the architecture utilizes **KEDA (Kubernetes Event-driven Autoscaling)** integrated with Istio and RabbitMQ:
-
-1. **Condition 1: Scale on Queue Depth (For Async Workers)**
-   - *Logic:* "If the `booking_events` queue in RabbitMQ exceeds 50 pending messages, scale up the `notification-service`."
-   - *Why it's safe:* The notification service consumes messages; it doesn't query the main database. Scaling it up simply drains the queue faster without harming the rest of the system.
-2. **Condition 2: Scale on Request Volume / RPS (For APIs)**
-   - *Logic:* "If the Istio Ingress Gateway reports that the `user-service` is receiving > 200 Requests Per Second (RPS), scale up the `user-service`."
-   - *Why it's safe:* We are scaling based on actual user demand (volume), not downstream slowness (latency).
-3. **Condition 3: Circuit Breaking (For Downstream Protection)**
-   - *Logic:* We don't scale when a service fails; we cut it off. We use Istio `DestinationRules` so that if a pod returns five `5xx` server errors in a row, Istio "ejects" that pod from the load balancer pool for 1 minute, preventing traffic from hitting a broken instance.
+3. **Notification Service (Go)**
+   - **Responsibility:** A high-speed background worker responsible for dispatching email and platform alerts.
+   - **API Protocol:** gRPC (HTTP/2) for synchronous triggers; AMQP for asynchronous event processing.
+   - **Database:** Connects to the `notificationsdb` PostgreSQL schema.
 
 ---
 
-## 4. End-to-End Istio Message Flow
 
-Istio operates using a **Data Plane** (Envoy sidecar proxies) and a **Control Plane** (`istiod`). Here is the exact lifecycle of a single request from a client's browser, through the mesh, and back.
+## 2. Communication Patterns
 
-### Step 1: The Client Request (Ingress)
-1. A user clicks "Login" on their browser. An HTTP POST request is sent to `http://socialboom.com/login`.
-2. The request hits the **Istio Ingress Gateway** (which acts as our L7 Load Balancer).
-3. The Gateway **terminates** the client's external HTTP/TCP connection. 
-4. The Gateway reads the URL path (`/login`), checks the `VirtualService` rules, and determines the request belongs to the `user-service`.
+SocialBoom utilizes multiple protocols to optimize performance based on the specific communication requirement:
 
-### Step 2: Entering the Mesh (mTLS & Sidecars)
-5. The Gateway initiates a brand new, strictly encrypted **mTLS (Mutual TLS)** tunnel to one of the `user-service` pods. 
-6. The traffic arrives at the `user-service` pod, but it does *not* hit your Python code yet. It is intercepted by the **Envoy Proxy Sidecar**.
-7. The Envoy Sidecar verifies the mTLS certificate. It then checks our `EnvoyFilter` rules (e.g., checking the token bucket to ensure the client hasn't exceeded 100 requests per second).
-8. Once validated, the Envoy sidecar forwards the traffic locally (via `localhost`) to your FastAPI Python application.
-
-### Step 3: Service-to-Service Communication
-9. Let's assume the `user-service` now needs to call the `notification-service` via gRPC. 
-10. Your Python code simply sends a raw HTTP/2 gRPC request to `notification-service:50051`.
-11. The outbound request is instantly intercepted by the `user-service`'s Envoy sidecar.
-12. The sidecar wraps the raw request in mTLS encryption and securely transmits it to the `notification-service`'s Envoy sidecar, which decrypts it and passes it to the Go application.
-
-### Step 4: The Response (Egress)
-13. The Go app processes the data and sends a response back through its local sidecar.
-14. The Python `user-service` finishes processing and returns a JSON response (e.g., the JWT Token) to *its* local sidecar.
-15. The sidecar transmits the encrypted JSON back to the Istio Ingress Gateway.
-16. The Gateway decrypts the internal mTLS payload, wraps it back into a standard external HTTP response, and sends it to the user's browser, finally **terminating** the transaction.
+- **External Traffic (REST):** All external client traffic (e.g., from web or mobile apps) enters the cluster via RESTful HTTP/1.1 endpoints.
+- **Internal Synchronous (gRPC):** When the Booking Service needs immediate, synchronous data from the Notification Service, it bypasses HTTP/1.1 and uses gRPC (HTTP/2 with Protocol Buffers) for highly efficient, strongly-typed data transfer.
+- **Internal Asynchronous (AMQP):** When a process does not require an immediate response (e.g., sending a welcome email after registration), the emitting service drops an event payload into **RabbitMQ**. The Notification Service independently consumes these messages, completely decoupling the workload and preventing API timeouts.
 
 ---
 
-## 5. Technical Specifications Used
+## 3. Data Storage & State Management
 
-- **External APIs:** REST (HTTP/1.1) built on Python FastAPI.
-- **Internal APIs:** gRPC (HTTP/2 with Protocol Buffers) for highly efficient, strongly-typed synchronous communication between microservices.
-- **Asynchronous Events:** AMQP 0-9-1 (RabbitMQ) for decoupled, non-blocking event streaming (e.g., `user_registered`, `booking_created`).
-- **Service Mesh:** Istio 1.22 (Envoy Proxies) enforcing Strict mTLS, L7 Routing, and Local Rate Limiting.
-- **Network Security:** Kubernetes Layer 4 `NetworkPolicies` enforcing a Default-Deny, Zero-Trust posture inside the cluster namespace.
-- **Database:** PostgreSQL accessed via SQLAlchemy ORM.
+The platform separates compute workloads from stateful data stores to ensure high resilience.
+
+- **Relational Database (PostgreSQL):** Used as the primary data store. Strict relational mapping (via SQLAlchemy) ensures ACID compliance for sensitive data like payments and user credentials.
+- **Message Broker (RabbitMQ):** Facilitates the event-driven architecture. Queues (such as `user_booking_events_queue`) provide durability, ensuring no background tasks are lost if a worker pod crashes.
+
+---
+
+## 4. Infrastructure & Network Security (Istio Service Mesh)
+
+The underlying network infrastructure is powered by the **Istio Service Mesh**, providing zero-trust security and intelligent traffic management without requiring changes to the application code.
+
+- **Ingress Gateway:** Acts as the single L7 load balancer, terminating external connections and routing traffic to the appropriate microservice using `VirtualService` rules.
+- **Mutual TLS (mTLS):** Enforced in `STRICT` mode via `PeerAuthentication`. All service-to-service traffic is automatically encrypted by Envoy sidecar proxies.
+- **Rate Limiting:** `EnvoyFilter` configurations inject Local Token-Bucket rate limiters (capped at 100 req/sec) directly into the sidecars to protect APIs from DDoS attacks or spam.
+- **Circuit Breaking:** `DestinationRules` monitor pod health. If a pod returns consecutive 5xx errors, it is temporarily ejected from the routing pool to prevent cascading failures.
+- **Network Policies:** Kubernetes Layer 4 policies enforce a default-deny posture, ensuring that pods can only communicate on explicitly allowed ports (e.g., blocking unauthorized access to the database).
+
+---
+
+## 5. Autoscaling Strategy
+
+To optimize cloud resource costs while maintaining performance during traffic spikes, SocialBoom implements a multi-tiered scaling strategy:
+
+1. **API Auto-Scaling (HPA):**
+   - The User and Booking REST APIs are scaled dynamically using the native Kubernetes Horizontal Pod Autoscaler (HPA). If CPU utilization crosses 70%, additional replicas are provisioned.
+
+2. **Event-Driven Scale-to-Zero (KEDA):**
+   - The Notification Service operates as a stateless background worker.
+   - Using **Kubernetes Event-driven Autoscaling (KEDA)**, the service scales based directly on RabbitMQ queue depth rather than CPU.
+   - If the queue is empty, the service scales to **0 replicas** to eliminate idle resource costs. For every 10 pending messages, a new replica is spun up to rapidly drain the queue.
