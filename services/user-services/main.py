@@ -5,8 +5,6 @@ from app.api.routes import user, auth, social, matching
 from db.database import engine
 from app.models.user import Base, User
 
-Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="User Service", version="1.0.0")
 
 @app.get("/health")
@@ -20,8 +18,12 @@ app.include_router(matching.router)
 
 @app.on_event("startup")
 async def startup_event():
-    from events.consumer import start_user_event_consumer
-    start_user_event_consumer()
+    Base.metadata.create_all(bind=engine)
+    try:
+        from events.consumer import start_user_event_consumer
+        start_user_event_consumer()
+    except Exception as e:
+        print(f"Warning: Failed to start event consumer: {e}")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
