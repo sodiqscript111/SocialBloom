@@ -1,10 +1,10 @@
-# SocialBoom: A Service Mesh Learning Playground 🚀
+# SocialBoom: A Service Mesh Learning Playground
 
 Welcome to **SocialBoom**! While on the surface this looks like a microservice platform connecting brands and influencers, this repository actually serves as my advanced engineering playground for exploring **Cloud-Native Architecture, Kubernetes, Istio, and Envoy proxy mechanics.**
 
 I built this project specifically to get hands-on experience with Service Mesh concepts, zero-trust security, and event-driven auto-scaling.
 
-## 🏗️ The Architecture Playground
+## The Architecture Playground
 
 This project is orchestrated using **Kubernetes** and networked using the **Istio Service Mesh**. Rather than relying on simple API gateways, I implemented advanced L7 proxy features by manipulating Envoy sidecars directly.
 
@@ -17,7 +17,7 @@ This project is orchestrated using **Kubernetes** and networked using the **Isti
 
 ---
 
-## 🕸️ Service Mesh Features Explored
+## Service Mesh Features Explored
 
 I used this project to learn and implement the following advanced Istio/Envoy features:
 
@@ -37,46 +37,10 @@ The mesh natively handles both HTTP/1.1 (REST) for the User and Booking services
 
 ---
 
-## 📈 Event-Driven Auto-Scaling (Scale-to-Zero)
+## Event-Driven Auto-Scaling (Scale-to-Zero)
 
 To explore advanced scaling beyond standard CPU metrics, I implemented **KEDA**.
 
 Instead of scaling the `notification-service` based on CPU usage, KEDA directly queries the RabbitMQ `user_booking_events_queue`. 
 *   **Scale to Zero:** If the queue is empty, KEDA kills all notification pods to save cluster resources (0 replicas).
 *   **Event-Driven:** For every 10 messages that drop into the queue, KEDA instantly spins up a new pod to drain the queue rapidly.
-
----
-
-## 🚀 Getting Started Locally
-
-### Prerequisites
-*   Docker Desktop (with Kubernetes enabled)
-*   PowerShell (for the deployment script)
-
-### Deployment
-
-To spin up the entire cluster, service mesh, and microservices on your local machine:
-
-```powershell
-# Clone the repository
-git clone https://github.com/sodiqscript111/SocialBloom.git
-cd SocialBloom
-
-# Run the automated deployment script
-.\deploy-local.ps1
-```
-
-The script will automatically:
-1. Apply the Kubernetes Secrets and ConfigMaps.
-2. Spin up PostgreSQL and RabbitMQ.
-3. Deploy the User, Booking, and Notification microservices.
-4. Download and install KEDA into the cluster.
-5. Apply the Istio `VirtualService`, `Gateway`, `PeerAuthentication`, and `EnvoyFilter` rules.
-6. Apply the KEDA `ScaledObject` queue rules.
-
-### Accessing the Mesh
-Once the pods are running, the Istio Ingress Gateway will expose the platform on port `8080`.
-*   **User Service API:** `http://localhost:8080/users`
-*   **Booking Service API:** `http://localhost:8080/bookings`
-
-*(Check out `ARCHITECTURE.md` for a deeper dive into the exact pod specifications and data models!)*
