@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -100,15 +101,18 @@ func TestSendNotification(t *testing.T) {
 func TestGetNotifications(t *testing.T) {
 	ctx := context.Background()
 
+	notifID1 := uuid.New().String()
+	notifID2 := uuid.New().String()
+
 	// Seed data
 	db.DB.Create(&models.Notification{
-		ID:      "notif-1",
+		ID:      notifID1,
 		UserID:  "user-456",
 		Title:   "First",
 		IsRead:  false,
 	})
 	db.DB.Create(&models.Notification{
-		ID:      "notif-2",
+		ID:      notifID2,
 		UserID:  "user-456",
 		Title:   "Second",
 		IsRead:  true,
@@ -139,10 +143,12 @@ func TestGetNotifications(t *testing.T) {
 
 func TestMarkAsRead(t *testing.T) {
 	ctx := context.Background()
+	
+	notifID3 := uuid.New().String()
 
 	// Seed data
 	db.DB.Create(&models.Notification{
-		ID:      "notif-3",
+		ID:      notifID3,
 		UserID:  "user-789",
 		Title:   "Read Me",
 		IsRead:  false,
@@ -150,7 +156,7 @@ func TestMarkAsRead(t *testing.T) {
 
 	req := &pb.MarkAsReadRequest{
 		UserId:         "user-789",
-		NotificationId: "notif-3",
+		NotificationId: notifID3,
 	}
 
 	res, err := testServer.MarkAsRead(ctx, req)
@@ -159,7 +165,7 @@ func TestMarkAsRead(t *testing.T) {
 
 	// Verify in DB
 	var notif models.Notification
-	err = db.DB.Where("id = ?", "notif-3").First(&notif).Error
+	err = db.DB.Where("id = ?", notifID3).First(&notif).Error
 	require.NoError(t, err)
 	assert.True(t, notif.IsRead)
 }
