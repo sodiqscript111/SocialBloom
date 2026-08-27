@@ -1,0 +1,39 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: notification-service-scaler
+  namespace: socialboom
+spec:
+  scaleTargetRef:
+    name: notification-service
+  minReplicaCount: 0  # <--- Here is the magic: Scale to Zero!
+  maxReplicaCount: 10
+  cooldownPeriod: 300 # Wait 5 minutes after the queue empties before killing the last pod
+  triggers:
+  - type: rabbitmq
+    metadata:
+      queueName: user_booking_events_queue
+      mode: QueueLength
+      value: "10" # Spin up 1 new pod for every 10 messages sitting in the queue
+    authenticationRef:
+      name: rabbitmq-trigger-auth
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: rabbitmq-trigger-auth
+  namespace: socialboom
+spec:
+  secretTargetRef:
+  - parameter: host
+    name: rabbitmq-keda-secret
+    key: host
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rabbitmq-keda-secret
+  namespace: socialboom
+type: Opaque
+stringData:
+  host: amqp://guest:guest@rabbitmq.socialboom.svc.cluster.local:5672/

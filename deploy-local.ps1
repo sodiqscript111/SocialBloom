@@ -19,8 +19,15 @@ kubectl apply -f k8s/user-service/service.yaml
 kubectl apply -f k8s/user-service/hpa.yaml
 kubectl apply -f k8s/booking-service/all.yaml
 
+Write-Host "Installing KEDA for Scale-to-Zero capability..."
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update
+helm upgrade --install keda kedacore/keda --namespace keda --create-namespace
+
+Write-Host "Applying Istio routing and KEDA rules..."
 kubectl apply -f k8s/istio/all.yaml
 kubectl apply -f k8s/istio/peer-authentication.yaml
 kubectl apply -f k8s/istio/rate-limits.yaml
+kubectl apply -f k8s/notification-service/scaledobject.yaml
 
 Write-Host "Deployment complete! Run 'kubectl get pods -n socialboom -w' to watch the pods spin up."
