@@ -1,4 +1,4 @@
-# SocialBoom: A Service Mesh Learning Playground
+# SocialBoom: My Service Mesh Learning Playground
 
 Welcome to **SocialBoom**! While on the surface this looks like a microservice platform connecting brands and influencers, this repository actually serves as my advanced engineering playground for exploring **Cloud-Native Architecture, Kubernetes, Istio, and Envoy proxy mechanics.**
 
